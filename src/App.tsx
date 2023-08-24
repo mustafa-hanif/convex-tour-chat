@@ -6,9 +6,33 @@ import { faker } from "@faker-js/faker";
 // For demo purposes. In a real app, you'd have real user data.
 const NAME = faker.person.firstName();
 
+const Message = ({ message: _message }: { message: {
+  author: string;
+  body: string;
+} }) => {
+  if (_message.author === "function") {
+    const objects = _message.body.split(",");
+    return <p>
+      <h2>Here are some amazing properties I found for you</h2>
+      <ul>
+        {objects.map((object) => {
+          const item = JSON.parse(object);
+          return <li key={item.id}>
+            <h3>{item.name}</h3>
+            <p>{item.description}</p>
+            <p>Price: {item.price}</p>
+            <p>bedrooms: {item.bedrooms}</p>
+          </li>
+        })}
+      </ul>
+    </p>
+  }
+  return _message.body;
+};
 export default function App() {
   const messages = useQuery(api.messages.list);
   const sendMessage = useMutation(api.messages.send);
+  const likeMessage = useMutation(api.messages.like);
 
   const [newMessageText, setNewMessageText] = useState("");
 
@@ -34,7 +58,9 @@ export default function App() {
         >
           <div>{message.author}</div>
 
-          <p>{message.body}</p>
+          <p>
+            <Message message={message} />
+          </p>
         </article>
       ))}
       <form
