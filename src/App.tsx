@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
-import { useEffect, useState } from "react";
+import { JSXElementConstructor, Key, ReactElement, ReactNode, ReactPortal, useEffect, useState } from "react";
 import { faker } from "@faker-js/faker";
 
 // For demo purposes. In a real app, you'd have real user data.
@@ -11,23 +11,22 @@ const Message = ({ message: _message }: { message: {
   body: string;
 } }) => {
   if (_message.author === "function") {
-    const objects = _message.body.split(",");
-    return <p>
+    const objects = JSON.parse(`[${_message.body}]`);
+    return <>
       <h2>Here are some amazing properties I found for you</h2>
       <ul>
-        {objects.map((object) => {
-          const item = JSON.parse(object);
+        {objects.map((item: { id: Key | null | undefined; link: string | undefined; title: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | null | undefined; description: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | null | undefined; price: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | null | undefined; bedrooms: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | null | undefined; }) => {
           return <li key={item.id}>
-            <h3>{item.name}</h3>
-            <p>{item.description}</p>
-            <p>Price: {item.price}</p>
-            <p>bedrooms: {item.bedrooms}</p>
+            <h3><a href={item.link} target="_blank">{item.title}</a></h3>
+            <div style={{ marginBottom: '10px' }}>{item.description}</div>
+            <div style={{ marginBottom: '10px', color: 'green' }}>Price: {item.price}</div>
+            <div style={{ marginBottom: '10px', color: 'gray' }}>Bedrooms: {item.bedrooms}</div>
           </li>
         })}
       </ul>
-    </p>
+      </>
   }
-  return _message.body;
+  return <>{_message.body}</>;
 };
 export default function App() {
   const messages = useQuery(api.messages.list);
