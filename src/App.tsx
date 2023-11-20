@@ -96,7 +96,7 @@ export default function App() {
         </button>
         
       </form>
-      {messages?.[messages?.length-1].author !== 'assistant' ? <span style={{ marginLeft: '20px', fontStyle: "italic" }}>Agent is typing ...</span> : null}
+      {messages?.[messages?.length-1]?.author !== 'assistant' ? <span style={{ marginLeft: '20px', fontStyle: "italic" }}>Agent is typing ...</span> : null}
     </main>
   );
 }
