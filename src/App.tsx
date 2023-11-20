@@ -53,8 +53,6 @@ export default function App() {
     }, 0);
   }, [messages]);
 
-  console.log(messages?.[messages?.length-1].author);
-
   return (
     <main className="chat" style={{ marginBottom: 200 }}>
       <header>
