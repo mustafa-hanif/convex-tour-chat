@@ -23,7 +23,6 @@ const Message = ({ message: _message }: { message: {
   if (_message.author === "function") {
     const objects = JSON.parse(`[${_message.body}]`);
     return <>
-      <h2>Here are some amazing properties I found for you</h2>
       <ul>
         {objects.map((item: PropertyType) => {
           return <li key={item.id} style={{ listStyle: "none" }}>

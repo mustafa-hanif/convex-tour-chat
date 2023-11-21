@@ -23,10 +23,10 @@ const functions = [{
       },
       price: {
         type: "string",
-        description: "The price of the property",
+        description: "The price range of the property",
       },
       bedrooms: {
-        type: "number",
+        type: "integer",
         description: "The number of bedrooms in the property",
       },
       developer: {
@@ -64,7 +64,6 @@ export const chat = action({
     )
   },
   handler: async (ctx, { messages }) => {
-    console.log(" iam in open ai ", messages);
     const openAiMessages: Array<ChatCompletionMessageParam> = messages.map((message) => {
       return {
         role: message.author === "assistant" ? "assistant" : "user",
@@ -84,10 +83,9 @@ export const chat = action({
     try {
 
     
-    const response = await openai.beta.chat.completions.stream({
+    const response = openai.beta.chat.completions.stream({
       model: "gpt-3.5-turbo",
       functions,
-      stream: true,
       messages: [
         {
           // Provide a 'system' message to give GPT context about how to respond
@@ -98,15 +96,16 @@ export const chat = action({
       ].concat(openAiMessages),
     });
 
-    for await (const chunk of response) {
-      console.log(chunk.choices[0]?.delta?.content || '');
-      process.stdout.write(chunk.choices[0]?.delta?.content || '');
-    }
+    // for await (const chunk of response) {
+    //   console.log(chunk.choices[0]?.delta?.content || '');
+    //   process.stdout.write(chunk.choices[0]?.delta?.content || '');
+    // }
 
-    console.log(response);
+    // console.log(response);
     const chatCompletion = await response.finalChatCompletion();
     // Pull the message content out of the response
     responseContent = chatCompletion.choices[0].message?.content;
+    console.log(responseContent);
     if (!responseContent) {
       const functionCallName = chatCompletion.choices[0].message?.function_call?.name;
       if(functionCallName === "getProperties") {
@@ -116,15 +115,40 @@ export const chat = action({
           price?: string;
           developer?: string;
         } = JSON.parse(chatCompletion.choices[0].message?.function_call?.arguments ?? '{}');
-
+        console.log(completionArguments);
+        if (completionArguments.price?.includes('+')) {
+          // completionArguments.price = completionArguments.price?.replace('+', '');
+          completionArguments.price = `${completionArguments.price.split('')[0]}000000-100000000`;
+        }
+        if (completionArguments.price?.includes('>')) {
+          // completionArguments.price = completionArguments.price?.replace('+', '');
+          completionArguments.price = `${completionArguments.price.split('')[1]}000000-100000000`;
+        }
+        const p = completionArguments.price?.split('-') ?? [0, 10000000];
         let searchParameters: SearchParams = {
-          'q'            : completionArguments?.Location ?? 'Dubai Marina',
+          'q'            : completionArguments?.Location ?? '*',
           'query_by'     : 'Location',
+          // [10..100]
+          'filter_by': completionArguments.price ? `price:[${p[0]}..${p[1]}]` : `price:>0`,
+          'per_page'     : 5,
         }
 
+        console.log(searchParameters);
+
         let searchResults = await typesense.collections('properties').documents().search(searchParameters);
-        console.log(searchResults);
+        if (searchResults.hits?.length === 0) {
+          await ctx.runMutation(api.messages.send, {
+            author: "assistant",
+            body: "Sorry, I don't have properties that match your criteria, however check back again soon for more properties.",
+          });
+          return;
+        }
+        // console.log(searchResults);
         // Send GPT's response as a new message
+        await ctx.runMutation(api.messages.send, {
+          author: "assistant",
+          body: `I'll show you some properties in the area of ${completionArguments.Location ?? 'entire dubai'} around the price range of ${completionArguments.price ?? 'AED 0-10000000'}`,
+        });
         await ctx.runMutation(api.messages.send, {
           author: "function",
           body: searchResults.hits?.map((hit) => {
